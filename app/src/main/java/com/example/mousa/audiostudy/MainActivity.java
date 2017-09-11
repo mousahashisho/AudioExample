@@ -7,11 +7,13 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.SeekBar;
 
+import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -19,15 +21,41 @@ public class MainActivity extends AppCompatActivity {
 
     MediaPlayer player;
     AudioManager audioManager;
+    SeekBar seekPlayer, volume;
+    int maxVolume, curVolume, maxPlayer;
 
     public void playAudio(View view) {
-        player.start();
+        if (player == null) {
+            player = MediaPlayer.create(this, R.raw.laugh);
+            maxPlayer = player.getDuration();
+            seekPlayer.setMax(maxPlayer);
+            player.start();
+        } else {
+            player.start();
+        }
+
     }
 
     public void pauseAudio(View view) {
-        if (player.isPlaying()) {
-            player.pause();
+        if (player != null) {
+            if (player.isPlaying()) {
+                player.pause();
+            }
         }
+
+    }
+
+    public void stopAudio(View view) {
+        if (player != null) {
+            if (player.isPlaying()) {
+                player.stop();
+            }
+            player.release();
+            player = null;
+            seekPlayer.setProgress(0);
+        }
+
+
     }
 
     @Override
@@ -38,14 +66,11 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
 
-        player = MediaPlayer.create(this, R.raw.laugh);
-
-
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC); // to set the maxium audio as the same as the phone
-        int curVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+        volume = (SeekBar) findViewById(R.id.seekBar);
 
-        SeekBar volume = (SeekBar) findViewById(R.id.seekBar);
+        maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC); // to set the maxium audio as the same as the phone
+        curVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
 
         volume.setMax(maxVolume);
         volume.setProgress(curVolume);
@@ -54,9 +79,8 @@ public class MainActivity extends AppCompatActivity {
         volume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0);
-
+                if (player != null)
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0);
             }
 
             @Override
@@ -70,32 +94,35 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        final SeekBar seekPlayer = (SeekBar) findViewById(R.id.seekBar2);
-        int maxPlayer = player.getDuration();
-        seekPlayer.setMax(maxPlayer);
+        seekPlayer = (SeekBar) findViewById(R.id.seekBar2);
+
 
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                seekPlayer.setProgress(player.getCurrentPosition());
+                if (player != null)
+                    seekPlayer.setProgress(player.getCurrentPosition());
             }
         }, 0, 1000);
 
         seekPlayer.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                player.seekTo(progress); // update
+                if (player != null)
+                    player.seekTo(progress); // update
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-                player.pause();
+                if (player != null)
+                    player.pause();
 
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                player.start();
+                if (player != null)
+                    player.start();
             }
         });
 
